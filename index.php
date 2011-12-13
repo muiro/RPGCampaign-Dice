@@ -380,7 +380,7 @@ function display_roll_history($number_of_rolls){
     }
 
     echo "<tr class='$roll_class'>";
-    echo "<td><a href='.$calling_page?doAction=view&amp;roll=$dice_roll_history_id'>$roll_date_time</a></td>\n";
+    echo "<td><a href='$calling_page?doAction=view&amp;roll=$dice_roll_history_id'>$roll_date_time</a></td>\n";
     echo "<td>$character_name $action<br />Dice: $number_of_dice$rote_roll$modifiers</td>\n";
     // @TODO Wrap individual rolls with success/failure/etc css tags, or do this during the building of the string in the rolling logic
     echo "<td>Successes: $number_successes<br />Result: $success_string</td>\n";
@@ -399,7 +399,7 @@ function display_roll_history($number_of_rolls){
 function display_form(){
   global $calling_page;
   echo '<div class="roller">
-<form method="post" action=".' . $calling_page . '"><input type="hidden" name="doAction" value="roll" />
+<form method="post" action="' . $calling_page . '"><input type="hidden" name="doAction" value="roll" />
 <label for="character">Character Name: </label><input type="text" name="character_name" size="20" maxlength="35" value="" id="character" />
 <label for="action">Action: </label><input type="text" name="action" size="20" maxlength="50" value="" id="action" />
 <label for="dice">Dice: </label><input type="text" name="dice" size="3" maxlength="2" value="" id="dice" /><br />
