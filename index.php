@@ -5,7 +5,7 @@
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
 <meta http-equiv="Content-Language" content="en_US" />
 <link rel="stylesheet" type="text/css" href="diceroller.css" />
-<title>SOME KIND OF LOLI DICE MACHINE</title>
+<title>RPGCampaign.org Dice Roller</title>
 </head>
 <body>
 <div class='main'>
