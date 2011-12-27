@@ -92,17 +92,24 @@ if ($_REQUEST["doAction"] == "roll") {
       }
       if ($_REQUEST["is_rote"] == "y") {
          if ($rollInt < 8) {
-           $rollString .= "<s>" . $rollInt . "</s>, ";
+           $rollString .= "<span class='rote_rerolled'>" . $rollInt . "</span>, ";
            $roteReroll = rand(1,10);
-           $rollString .= $roteReroll;
+//           $rollString .= $roteReroll;
            if ($roteReroll >= 8 ) {
              $successes++;
+             $rollString .= "<span class='roll_success'>" . $roteReroll . "</span>";
+           } else {
+              $rollString .= "<span class='roll_normal'>" . $roteReroll . "</span>"; 
            }
          } else {
-           $rollString .= $rollInt;
+           $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
          }
       } else {
-        $rollString .= $rollInt;
+          if ($rollInt >= 8) {
+            $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+          } else {
+              $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
+          }
       }
       // @TODO reinstate and update 1's cancel functionality
 #      if ($_REQUEST["1cancel"] == "y" && $rollInt == 1 && $_REQUEST["is_rote"] != "y") {
@@ -113,9 +120,12 @@ if ($_REQUEST["doAction"] == "roll") {
       }
       while ($rollInt >= $reroll && $reroll > 0) {
         $rollInt = rand(1,10);
-        $rollString .= $rollInt;
+//        $rollString .= $rollInt;
         if ($rollInt >= 8) {
           $successes++;
+          $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+        } else {
+            $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
         }
         if ($_REQUEST["1cancel"] == "y" && $rollInt == 1) {
           $successes--;
@@ -196,21 +206,27 @@ if ($_REQUEST["doAction"] == "roll") {
     }
     $rollInt = rand(1,10);
     $originalRollInt = $rollInt;
-    $rollString .= $rollInt;
+    //$rollString .= $rollInt;
     if ($rollInt >= 8) {
       $successes++;
-    }
-    if ($rollInt == 1) {
-      $successes = -1;
+      $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+    } else if ($rollInt == 1){
+        $rollString .= "<span class='roll_failure'>" . $rollInt . "</span>";
+        $successes = -1;
+    } else {
+        $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
     }
     if ($rollInt >= $reroll && $reroll > 0) {
       $rollString .= "(";
     }
     while ($rollInt >= $reroll && $reroll > 0) {
       $rollInt = rand(1,10);
-      $rollString .= $rollInt;
+//      $rollString .= $rollInt;
       if ($rollInt >= 8) {
         $successes++;
+        $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+      } else {
+          $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
       }
       if ($rollInt >= $reroll) {
         $rollString .= ", ";
@@ -382,7 +398,6 @@ function display_roll_history($number_of_rolls){
     echo "<tr class='$roll_class'>";
     echo "<td><a href='$calling_page?doAction=view&amp;roll=$dice_roll_history_id'>$roll_date_time</a></td>\n";
     echo "<td>$character_name $action<br />Dice: $number_of_dice$rote_roll$modifiers</td>\n";
-    // @TODO Wrap individual rolls with success/failure/etc css tags, or do this during the building of the string in the rolling logic
     echo "<td>Successes: $number_successes<br />Result: $success_string</td>\n";
     echo "<td>$result</td>\n";
     echo "</tr>\n";
