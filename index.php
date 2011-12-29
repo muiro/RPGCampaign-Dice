@@ -114,7 +114,6 @@ if ($_REQUEST["doAction"] == "roll") {
               $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
           }
       }
-      // @TODO reinstate and update 1's cancel functionality
 //      if ($_REQUEST["ones_cancel"] == "y" && $rollInt == 1 && $_REQUEST["is_rote"] != "y") {
 //        $successes--;
 //      }
@@ -452,7 +451,7 @@ function display_form(){
 }
 
 function insert_roll($character_name, $action, $reroll, $dice, $chance_roll, $successes, $result, $is_rote, $ones_cancel){
-    // @TODO Add options to track willpower usage, init roll, 1's cancel (re-add). Will need DB fields as well.
+    // @TODO Add options to track willpower usage, init roll, Will need DB fields as well.
   global $dice_db_hostname, $dice_db_username, $dice_db_password, $dice_db_database, $dice_db_table;
   
 //  $insert_roll_query = "INSERT INTO " . $dice_db_table . " (character_name, action, reroll_option, number_of_dice, chance_die, roll_date_time, number_successes, result, is_rote) VALUES ('" . mysql_real_escape_string($character_name) . "', '" . mysql_real_escape_string($action) . "', " . $reroll . ", " . $dice . ", " . $chance_roll . ", now(), " . $successes . ", '" . mysql_real_escape_string($result) . "', " . $is_rote . ")";
