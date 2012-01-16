@@ -44,7 +44,7 @@ if ($_REQUEST["doAction"] == "roll") {
     $errorMessage .= "<li>Please enter the number of dice to roll</li>";  
   }
 
-  refill_params($_REQUEST["character_name"], $roll_action, $_REQUEST["dice"], $_REQUEST["reroll"], $_REQUEST["ones_cancel"], $_REQUEST["is_rote"]);
+  refill_params($_REQUEST["character_name"], $roll_action, $_REQUEST["dice"], $_REQUEST["reroll"], $_REQUEST["ones_cancel"], $_REQUEST["is_rote"], $_REQUEST["add_willpower"]);
 
   if(!empty($errorMessage)) {
     echo "<div class='failure'>\n";
@@ -169,7 +169,13 @@ if ($_REQUEST["doAction"] == "roll") {
       $ones_cancel = 0;
     }
     
-    insert_roll($_REQUEST["character_name"], $roll_action, $reroll, $_REQUEST["dice"], 0, $successes, $rollString, $is_rote, $ones_cancel);
+    if($_REQUEST["add_willpower"] == "y") {
+      $add_willpower = 1;
+    } else {
+      $add_willpower = 0;
+    }
+    
+    insert_roll($_REQUEST["character_name"], $roll_action, $reroll, $_REQUEST["dice"], 0, $successes, $rollString, $is_rote, $ones_cancel, 0, $add_willpower);
 
   }
   // @TODO add in doAction handler for initiative rolls
@@ -186,7 +192,7 @@ if ($_REQUEST["doAction"] == "roll") {
     }
   }
 
-  refill_params($_REQUEST["character_name"], $_REQUEST["action"], $_REQUEST["dice"], $_REQUEST["reroll"], "n", $_REQUEST["is_rote"]);
+  refill_params($_REQUEST["character_name"], $_REQUEST["action"], $_REQUEST["dice"], $_REQUEST["reroll"], "n", $_REQUEST["is_rote"], "n");
 
   if(!empty($errorMessage)) {
     echo "<div class='failure'>\n";
@@ -253,7 +259,7 @@ if ($_REQUEST["doAction"] == "roll") {
     echo "Successes: " . $successes . "<br />\n";
     echo "</div>\n";
 
-    insert_roll($_REQUEST["character_name"], $_REQUEST["action"], $reroll, 1, 1, $successes, $rollString, 0, 0);
+    insert_roll($_REQUEST["character_name"], $_REQUEST["action"], $reroll, 1, 1, $successes, $rollString, 0, 0, 0, 0);
   }
 } else if ($_REQUEST["doAction"] == "view") {
 
@@ -450,7 +456,7 @@ function display_form(){
 </div>';
 }
 
-function insert_roll($character_name, $action, $reroll, $dice, $chance_roll, $successes, $result, $is_rote, $ones_cancel){
+function insert_roll($character_name, $action, $reroll, $dice, $chance_roll, $successes, $result, $is_rote, $ones_cancel, $init_roll, $willpower){
     // @TODO Add options to track willpower usage, init roll, Will need DB fields as well.
   global $dice_db_hostname, $dice_db_username, $dice_db_password, $dice_db_database, $dice_db_table;
   
@@ -458,14 +464,14 @@ function insert_roll($character_name, $action, $reroll, $dice, $chance_roll, $su
 
   $con = mysql_connect($dic_db_hostname, $dice_db_username, $dice_db_password)
         or die('DB connection error: ' . mysql_error());
-  $insert_roll_query = "INSERT INTO " . $dice_db_table . " (character_name, action, reroll_option, number_of_dice, chance_die, roll_date_time, number_successes, result, is_rote, ones_cancel) VALUES ('" . mysql_real_escape_string($character_name) . "', '" . mysql_real_escape_string($action) . "', " . $reroll . ", " . $dice . ", " . $chance_roll . ", now(), " . $successes . ", '" . mysql_real_escape_string($result) . "', " . $is_rote . ", " . $ones_cancel . ")";
+  $insert_roll_query = "INSERT INTO " . $dice_db_table . " (character_name, action, reroll_option, number_of_dice, chance_die, roll_date_time, number_successes, result, is_rote, ones_cancel, is_willpower, is_init) VALUES ('" . mysql_real_escape_string($character_name) . "', '" . mysql_real_escape_string($action) . "', " . $reroll . ", " . $dice . ", " . $chance_roll . ", now(), " . $successes . ", '" . mysql_real_escape_string($result) . "', " . $is_rote . ", " . $ones_cancel . ", 0, 0)";
 
   mysql_select_db($dice_db_database) or die('DB connection error: ' . mysql_error());
     $inserted =  mysql_query($insert_roll_query) or die('DB Query failed: ' . mysql_error());
   mysql_close($con);
 }
 
-function calc_success($number_successes, $chance_die) {
+function calc_success($number_successes, $chance_die, $init_roll) {
   $success_string = "";
   
   if (!is_numeric($number_successes) || !is_numeric($chance_die) || !($chance_die == 0 || $chance_die == 1)) {
@@ -480,6 +486,8 @@ function calc_success($number_successes, $chance_die) {
     } else {
       $success_string = "Success";
     }
+  } else if ($init_roll == 1) {
+      $success_string = $number_successes . " + init modifier.";
   } else {
     if ($number_successes < 1) {
       $success_string = "Failure";
@@ -493,7 +501,7 @@ function calc_success($number_successes, $chance_die) {
   return($success_string);
 }
 
-function refill_params($character_name, $roll_action, $dice, $reroll, $ones_cancel, $is_rote, $ones_cancel) {
+function refill_params($character_name, $roll_action, $dice, $reroll, $ones_cancel, $is_rote, $ones_cancel, $willpower) {
   echo '<script type="text/javascript">';
     echo 'document.forms[0].character_name.value = "' . $character_name  . '";';
     echo 'document.forms[0].action.value = "' . $roll_action . '";';
@@ -508,6 +516,9 @@ function refill_params($character_name, $roll_action, $dice, $reroll, $ones_canc
     }
     if ($is_rote == "y") {
       echo 'document.forms[0].is_rote.checked = true;';
+    }
+    if ($willpower == "y") {
+        echo 'document.forms[].add_willpower.checked = true;';
     }
     echo '</script>';
 }
