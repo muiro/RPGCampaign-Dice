@@ -5,9 +5,10 @@
 <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
 <meta http-equiv="Content-Language" content="en_US" />
 <link rel="stylesheet" type="text/css" href="diceroller.css" />
-<title>RPGCampaign Dice Roller</title>
+<title>Dice Roller - RPGCampaign.org</title>
 </head>
 <body>
+<table style="float: right;"><tr><td><img src="/forum/styles/xabbblue/imageset/site_logo.png"></td></tr></table>
 <div class='main'>
 
 <?php
@@ -44,7 +45,7 @@ if ($_REQUEST["doAction"] == "roll") {
     $errorMessage .= "<li>Please enter the number of dice to roll</li>";  
   }
 
-  refill_params($_REQUEST["character_name"], $roll_action, $_REQUEST["dice"], $_REQUEST["reroll"], "n", $_REQUEST["is_rote"]);
+  refill_params($_REQUEST["character_name"], $roll_action, $_REQUEST["dice"], $_REQUEST["reroll"], $_REQUEST["ones_cancel"], $_REQUEST["is_rote"], $_REQUEST["add_willpower"]);
 
   if(!empty($errorMessage)) {
     echo "<div class='failure'>\n";
@@ -72,7 +73,6 @@ if ($_REQUEST["doAction"] == "roll") {
 #    echo '</script>';
 
   } else {
-    // @TODO check for willpower checkbox and add a success
     $rollString = "";
     $successes = 0;
     $reroll = $_REQUEST["reroll"];
@@ -81,6 +81,10 @@ if ($_REQUEST["doAction"] == "roll") {
     }
     if ( is_null($reroll) || !($reroll == 10 || $reroll == 9 || $reroll == 8 || $reroll == 0)) {
       $reroll = 10;
+    }
+    
+    if ($_REQUEST["add_willpower"] == "y") {
+        $successes = 1;
     }
 
     for ($i = 0; $i < $_REQUEST["dice"]; $i++) {
@@ -92,34 +96,46 @@ if ($_REQUEST["doAction"] == "roll") {
       }
       if ($_REQUEST["is_rote"] == "y") {
          if ($rollInt < 8) {
-           $rollString .= "<s>" . $rollInt . "</s>, ";
+           $rollString .= "<span class='rote_rerolled'>" . $rollInt . "</span>, ";
            $roteReroll = rand(1,10);
-           $rollString .= $roteReroll;
+//           $rollString .= $roteReroll;
            if ($roteReroll >= 8 ) {
              $successes++;
+             $rollString .= "<span class='roll_success'>" . $roteReroll . "</span>";
+           } else {
+              $rollString .= "<span class='roll_normal'>" . $roteReroll . "</span>"; 
            }
          } else {
-           $rollString .= $rollInt;
+           $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
          }
       } else {
-        $rollString .= $rollInt;
+          if ($rollInt >= 8) {
+            $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+          } else if ($_REQUEST["ones_cancel"] == "y" && $rollInt == 1) {
+              $successes--;
+              $rollString .= "<span class='roll_failure'>" . $rollInt . "</span>";
+          } else {
+              $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
+          }
       }
-      // @TODO reinstate and update 1's cancel functionality
-#      if ($_REQUEST["1cancel"] == "y" && $rollInt == 1 && $_REQUEST["is_rote"] != "y") {
-#        $successes--;
-#      }
+//      if ($_REQUEST["ones_cancel"] == "y" && $rollInt == 1 && $_REQUEST["is_rote"] != "y") {
+//        $successes--;
+//      }
       if ($rollInt >= $reroll && $reroll > 0) {
         $rollString .= " ("; 
       }
       while ($rollInt >= $reroll && $reroll > 0) {
         $rollInt = rand(1,10);
-        $rollString .= $rollInt;
+//        $rollString .= $rollInt;
         if ($rollInt >= 8) {
           $successes++;
+          $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+        } else {
+            $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
         }
-        if ($_REQUEST["1cancel"] == "y" && $rollInt == 1) {
-          $successes--;
-        }
+//        if ($_REQUEST["ones_cancel"] == "y" && $rollInt == 1) {
+//          $successes--;
+//        }
         if ($rollInt >= $reroll) {
           $rollString .= ", ";
         }
@@ -132,6 +148,11 @@ if ($_REQUEST["doAction"] == "roll") {
       }
     }
     
+    if ($_REQUEST["add_willpower"] == "y") {
+        $rollString .= " <span class='roll_willpower'>(+1 willpower)</span>";
+    }
+    
+    // @TODO Move this to a function to eliminate differences between here and the view doAction
     echo "<div class='result'>\n";
     echo "Character Name: " . $_REQUEST["character_name"] . "<br />\n";
     echo "Action: $roll_action<br />\n";
@@ -142,6 +163,7 @@ if ($_REQUEST["doAction"] == "roll") {
     echo "Rote: " . $_REQUEST["is_rote"] . "<br />\n";
     echo "Result: " . $rollString  . "<br />\n";
     echo "Successes: " . $successes . "<br />\n";
+    echo "1's Cancel: " . $_REQUEST["ones_cancel"] . "<br />\n";
     echo "</div>\n";
 
     if($_REQUEST["is_rote"] == "y") {
@@ -149,11 +171,21 @@ if ($_REQUEST["doAction"] == "roll") {
     } else {
       $is_rote = 0;
     }
+    if($_REQUEST["ones_cancel"] == "y") {
+      $ones_cancel = 1;
+    } else {
+      $ones_cancel = 0;
+    }
     
-    insert_roll($_REQUEST["character_name"], $roll_action, $reroll, $_REQUEST["dice"], 0, $successes, $rollString, $is_rote);
+    if($_REQUEST["add_willpower"] == "y") {
+      $add_willpower = 1;
+    } else {
+      $add_willpower = 0;
+    }
+    
+    insert_roll($_REQUEST["character_name"], $roll_action, $reroll, $_REQUEST["dice"], 0, $successes, $rollString, $is_rote, $ones_cancel, 0, $add_willpower);
 
   }
-  // @TODO add in doAction handler for initiative rolls
 } else if ($_REQUEST["doAction"] == "chance") {
   $errorMessage = "";
   if(empty($_REQUEST["character_name"])) {
@@ -167,7 +199,7 @@ if ($_REQUEST["doAction"] == "roll") {
     }
   }
 
-  refill_params($_REQUEST["character_name"], $_REQUEST["action"], $_REQUEST["dice"], $_REQUEST["reroll"], "n", $_REQUEST["is_rote"]);
+  refill_params($_REQUEST["character_name"], $_REQUEST["action"], $_REQUEST["dice"], $_REQUEST["reroll"], "n", $_REQUEST["is_rote"], "n");
 
   if(!empty($errorMessage)) {
     echo "<div class='failure'>\n";
@@ -196,21 +228,27 @@ if ($_REQUEST["doAction"] == "roll") {
     }
     $rollInt = rand(1,10);
     $originalRollInt = $rollInt;
-    $rollString .= $rollInt;
+    //$rollString .= $rollInt;
     if ($rollInt >= 8) {
       $successes++;
-    }
-    if ($rollInt == 1) {
-      $successes = -1;
+      $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+    } else if ($rollInt == 1){
+        $rollString .= "<span class='roll_failure'>" . $rollInt . "</span>";
+        $successes = -1;
+    } else {
+        $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
     }
     if ($rollInt >= $reroll && $reroll > 0) {
       $rollString .= "(";
     }
     while ($rollInt >= $reroll && $reroll > 0) {
       $rollInt = rand(1,10);
-      $rollString .= $rollInt;
+//      $rollString .= $rollInt;
       if ($rollInt >= 8) {
         $successes++;
+        $rollString .= "<span class='roll_success'>" . $rollInt . "</span>";
+      } else {
+          $rollString .= "<span class='roll_normal'>" . $rollInt . "</span>";
       }
       if ($rollInt >= $reroll) {
         $rollString .= ", ";
@@ -228,7 +266,7 @@ if ($_REQUEST["doAction"] == "roll") {
     echo "Successes: " . $successes . "<br />\n";
     echo "</div>\n";
 
-    insert_roll($_REQUEST["character_name"], $_REQUEST["action"], $reroll, 1, 1, $successes, $rollString, 0);
+    insert_roll($_REQUEST["character_name"], $_REQUEST["action"], $reroll, 1, 1, $successes, $rollString, 0, 0, 0, 0);
   }
 } else if ($_REQUEST["doAction"] == "view") {
 
@@ -251,20 +289,26 @@ if ($_REQUEST["doAction"] == "roll") {
       $number_successes = mysql_result($roll_data, $i, "number_successes");
       $result = mysql_result($roll_data, $i, "result");
       $is_rote = mysql_result($roll_data, $i, "is_rote");
+      $ones_cancel = mysql_result($roll_data, $i, "ones_cancel");
+      $is_willpower = mysql_result($roll_data, $i, "is_willpower");
+      $is_init = mysql_result($roll_data, $i, "is_init");
 
       $success_string = calc_success($number_successes, $chance_die);
 
       echo "<div class='result'>
-Character Name: $character_name <br />
-Action: $action <br />
-Reroll: $reroll_option <br />
-Dice Rolled: $number_of_dice <br />
-Chance die: $chance_die <br />
-Roll Date: $roll_date_time <br />
-Successes: $number_successes <br />
-Result: $success_string <br />
-Roll: $result <br />
-Rote: $is_rote
+      Character Name: $character_name <br />
+      Action: $action <br />
+      Reroll: $reroll_option <br />
+      Dice Rolled: $number_of_dice <br />
+      Chance die: $chance_die <br />
+      Roll Date: $roll_date_time <br />
+      Successes: $number_successes <br />
+      Result: $success_string <br />
+      Roll: $result <br />
+      Rote: $is_rote <br />
+      1's Cancel: $ones_cancel <br />
+      Willpower Used: $is_willpower <br />
+      Init roll: $is_init
 </div>";
 
     } else {
@@ -280,7 +324,45 @@ Rote: $is_rote
     echo "invalid roll number\n";
     echo "</div>\n";
   }
-} else {
+} else if ($_REQUEST["doAction"] == "initiative") {
+    $errorMessage = "";
+  if(empty($_REQUEST["character_name"])) {
+    $errorMessage .= "<li>Please fill in character name</li>";
+  }
+  if(!is_numeric($_REQUEST["dice"])) {
+    if(empty($_REQUEST["dice"])) {
+      $errorMessage .= "<li>Please enter the number of dice to roll</li>";
+    } else {
+      $errorMessage .= "<li>Please enter the <b>number</b> of dice to roll</li>";
+    }
+  }
+  
+  $roll_action = "Initiative roll";
+  
+  refill_params($_REQUEST["character_name"], $roll_action, $_REQUEST["dice"], $_REQUEST["reroll"], "n", "n", "n");
+  
+  if(!empty($errorMessage)) {
+    echo "<div class='failure'>\n";
+    echo "<p>Please correct your roll:</p>\n";
+    echo "<ul>" . $errorMessage . "</ul>\n";
+    echo "</div>\n";
+    } else {
+        $rollString = "";
+        $successes = 0;
+        $rollInt = rand(1,10);
+        $successes = $rollInt;
+        $rollString = "<span class='roll_init'>" . $rollInt . "</span>";
+    
+        echo "<div class='result'>";
+        echo "Character Name: " . $_REQUEST["character_name"] . "<br />\n";
+        echo "Init Roll<br />\n";
+        echo "Result: " . $rollString  . " + init modifier<br />\n";
+        echo "</div>\n";
+
+        insert_roll($_REQUEST["character_name"], $roll_action, 10, 1, 0, $successes, $rollString, 0, 0, 1, 0);
+    }
+  
+} else {   
 }
 if ($_REQUEST["doAction"] != "view") {
   display_roll_history(20);
@@ -344,10 +426,25 @@ function display_roll_history($number_of_rolls){
     $number_successes = mysql_result($last_n_rolls, $i, "number_successes");
     $result = mysql_result($last_n_rolls, $i, "result");
     $is_rote = mysql_result($last_n_rolls, $i, "is_rote");
+    $ones_cancel = mysql_result($last_n_rolls, $i, "ones_cancel");
+    $is_willpower = mysql_result($last_n_rolls, $i, "is_willpower");
+    $is_init = mysql_result($last_n_rolls, $i, "is_init");
 
     $rote_roll = "";
     if ($is_rote == 1) {
       $rote_roll = "<br /><b>Rote Roll</b>";
+    }
+    $ones_cancel_roll = "";
+    if ($ones_cancel == 1) {
+      $ones_cancel_roll = "<br /><b>1's Cancel</b>";
+    }
+    $willpower_used = "";
+    if ($is_willpower == 1) {
+        $willpower_used = "<br /><b>Willpower Used</b>";
+    }
+    $init_roll = "";
+    if ($is_init == 1) {
+        $init_roll = "<br /><b>Init Roll</b>";
     }
     $modifiers = "";
     if ($reroll_option != 10) {
@@ -367,7 +464,7 @@ function display_roll_history($number_of_rolls){
       }
     }
 
-    $success_string = calc_success($number_successes, $chance_die);
+    $success_string = calc_success($number_successes, $chance_die, $is_init);
 
     $roll_class = "normal_roll";
 
@@ -381,8 +478,7 @@ function display_roll_history($number_of_rolls){
 
     echo "<tr class='$roll_class'>";
     echo "<td><a href='$calling_page?doAction=view&amp;roll=$dice_roll_history_id'>$roll_date_time</a></td>\n";
-    echo "<td>$character_name $action<br />Dice: $number_of_dice$rote_roll$modifiers</td>\n";
-    // @TODO Wrap individual rolls with success/failure/etc css tags, or do this during the building of the string in the rolling logic
+    echo "<td>$character_name $action<br />Dice: $number_of_dice$rote_roll$modifiers$ones_cancel_roll$willpower_used$init_roll</td>\n";
     echo "<td>Successes: $number_successes<br />Result: $success_string</td>\n";
     echo "<td>$result</td>\n";
     echo "</tr>\n";
@@ -419,22 +515,21 @@ function display_form(){
 </div>';
 }
 
-function insert_roll($character_name, $action, $reroll, $dice, $chance_roll, $successes, $result, $is_rote){
-    // @TODO Add options to track willpower usage, init roll, 1's cancel (re-add). Will need DB fields as well.
+function insert_roll($character_name, $action, $reroll, $dice, $chance_roll, $successes, $result, $is_rote, $ones_cancel, $init_roll, $willpower){
   global $dice_db_hostname, $dice_db_username, $dice_db_password, $dice_db_database, $dice_db_table;
   
 //  $insert_roll_query = "INSERT INTO " . $dice_db_table . " (character_name, action, reroll_option, number_of_dice, chance_die, roll_date_time, number_successes, result, is_rote) VALUES ('" . mysql_real_escape_string($character_name) . "', '" . mysql_real_escape_string($action) . "', " . $reroll . ", " . $dice . ", " . $chance_roll . ", now(), " . $successes . ", '" . mysql_real_escape_string($result) . "', " . $is_rote . ")";
 
   $con = mysql_connect($dic_db_hostname, $dice_db_username, $dice_db_password)
         or die('DB connection error: ' . mysql_error());
-  $insert_roll_query = "INSERT INTO " . $dice_db_table . " (character_name, action, reroll_option, number_of_dice, chance_die, roll_date_time, number_successes, result, is_rote) VALUES ('" . mysql_real_escape_string($character_name) . "', '" . mysql_real_escape_string($action) . "', " . $reroll . ", " . $dice . ", " . $chance_roll . ", now(), " . $successes . ", '" . mysql_real_escape_string($result) . "', " . $is_rote . ")";
+  $insert_roll_query = "INSERT INTO " . $dice_db_table . " (character_name, action, reroll_option, number_of_dice, chance_die, roll_date_time, number_successes, result, is_rote, ones_cancel, is_willpower, is_init) VALUES ('" . mysql_real_escape_string($character_name) . "', '" . mysql_real_escape_string($action) . "', " . $reroll . ", " . $dice . ", " . $chance_roll . ", now(), " . $successes . ", '" . mysql_real_escape_string($result) . "', " . $is_rote . ", " . $ones_cancel . ", " . $willpower . ", " . $init_roll . ")";
 
   mysql_select_db($dice_db_database) or die('DB connection error: ' . mysql_error());
     $inserted =  mysql_query($insert_roll_query) or die('DB Query failed: ' . mysql_error());
   mysql_close($con);
 }
 
-function calc_success($number_successes, $chance_die) {
+function calc_success($number_successes, $chance_die, $init_roll) {
   $success_string = "";
   
   if (!is_numeric($number_successes) || !is_numeric($chance_die) || !($chance_die == 0 || $chance_die == 1)) {
@@ -449,9 +544,13 @@ function calc_success($number_successes, $chance_die) {
     } else {
       $success_string = "Success";
     }
+  } else if ($init_roll == 1) {
+      $success_string = $number_successes . " + init modifier.";
   } else {
-    if ($number_successes < 1) {
-      $success_string = "Failure";
+    if ($number_successes < 0) {
+      $success_string = "Dramatic Failure";
+    } else if ($number_successes < 1) {
+        $success_string = "Failure";
     } else if ($number_successes >= 5) {
       $success_string = "Exceptional Success";
     } else {
@@ -462,7 +561,7 @@ function calc_success($number_successes, $chance_die) {
   return($success_string);
 }
 
-function refill_params($character_name, $roll_action, $dice, $reroll, $ones_cancel, $is_rote) {
+function refill_params($character_name, $roll_action, $dice, $reroll, $ones_cancel, $is_rote,  $willpower) {
   echo '<script type="text/javascript">';
     echo 'document.forms[0].character_name.value = "' . $character_name  . '";';
     echo 'document.forms[0].action.value = "' . $roll_action . '";';
@@ -473,10 +572,13 @@ function refill_params($character_name, $roll_action, $dice, $reroll, $ones_canc
     echo '}';
     echo '}';
     if ($ones_cancel == "y") {
-      echo 'document.forms[0].ones_cancel.checked = true';
+      echo 'document.forms[0].ones_cancel.checked = true;';
     }
     if ($is_rote == "y") {
       echo 'document.forms[0].is_rote.checked = true;';
+    }
+    if ($willpower == "y") {
+      echo 'document.forms[0].add_willpower.checked = true;';
     }
     echo '</script>';
 }
