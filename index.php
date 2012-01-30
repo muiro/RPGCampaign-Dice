@@ -219,13 +219,14 @@ if ($_REQUEST["doAction"] == "roll") {
   } else {
     $rollString = "";
     $successes = 0;
-    $reroll = $_REQUEST["reroll"];
-    if ($reroll == "n") {
-      $reroll = 0;
-    }
-    if ( is_null($reroll) || !($reroll == 10 || $reroll == 9 || $reroll == 8 || $reroll == 0)) {
-      $reroll = 10;
-    }
+//    $reroll = $_REQUEST["reroll"];
+//    if ($reroll == "n") {
+//      $reroll = 0;
+//    }
+//    if ( is_null($reroll) || !($reroll == 10 || $reroll == 9 || $reroll == 8 || $reroll == 0)) {
+//      $reroll = 10;
+//    }
+    $reroll = 0;
     $rollInt = rand(1,10);
     $originalRollInt = $rollInt;
     //$rollString .= $rollInt;
